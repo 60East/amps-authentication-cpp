@@ -28,9 +28,9 @@
 #include <cstdlib>
 #include "gtest/gtest.h"
 #ifdef _WIN32
-#include "../include/AMPSKerberosSSPIAuthenticator.hpp"
+  #include "../include/AMPSKerberosSSPIAuthenticator.hpp"
 #else
-#include "../include/AMPSKerberosGSSAPIAuthenticator.hpp"
+  #include "../include/AMPSKerberosGSSAPIAuthenticator.hpp"
 #endif
 
 class AMPSKerberosAuthenticatorTestSuite : public ::testing::Test

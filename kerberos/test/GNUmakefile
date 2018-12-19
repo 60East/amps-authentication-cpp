@@ -25,7 +25,7 @@ GTEST_LIB=./lib/$(PROCESSOR)/gtest-all.o
 LDLIBS=-lamps -lpthread -lrt -ldl -lgssapi_krb5
 CXXFLAGS=$(OPTIMIZER) $(DEBUGOPTS) $(ARCH) -I$(GTEST_DIR)/include -I$(CLIENT_DIR)/include -I$(KRB5_DIR)/include -Wall -std=c++11
 LDFLAGS=-L$(CLIENT_LIB_DIR) -L$(KRB5_DIR)/lib
-TESTS = AMPSKerberosAuthenticatorTest
+TESTS = AMPSKerberosAuthenticatorTest AMPSKerberosUtilsTest
 
 .PHONY: all
 
@@ -40,4 +40,7 @@ $(GTEST_LIB): $(GTEST_DIR)/src/gtest-all.cc
 
 AMPSKerberosAuthenticatorTest: AMPSKerberosAuthenticatorTest.cpp $(GTEST_LIB)
 	g++ AMPSKerberosAuthenticatorTest.cpp $(LDLIBS) $(LDFLAGS) $(CXXFLAGS) $(GTEST_LIB) -o AMPSKerberosAuthenticatorTest
+
+AMPSKerberosUtilsTest: AMPSKerberosUtilsTest.cpp $(GTEST_LIB)
+	g++ AMPSKerberosUtilsTest.cpp $(LDLIBS) $(LDFLAGS) $(CXXFLAGS) $(GTEST_LIB) -o AMPSKerberosUtilsTest
 
