@@ -27,13 +27,17 @@
 #include <iostream>
 #include <cstdlib>
 #include "gtest/gtest.h"
+#ifdef _WIN32
+#include "../include/AMPSKerberosSSPIAuthenticator.hpp"
+#else
 #include "../include/AMPSKerberosGSSAPIAuthenticator.hpp"
+#endif
 
-class AMPSKerberosGSSAPIAuthenticatorTestSuite : public ::testing::Test
+class AMPSKerberosAuthenticatorTestSuite : public ::testing::Test
 {
 public:
 
-  AMPSKerberosGSSAPIAuthenticatorTestSuite()
+  AMPSKerberosAuthenticatorTestSuite()
   {
     char const* host = getenv("AMPS_HOST");
     if (host == NULL)
@@ -64,7 +68,7 @@ public:
   {
   }
 
-  ~AMPSKerberosGSSAPIAuthenticatorTestSuite()
+  ~AMPSKerberosAuthenticatorTestSuite()
   {
   }
 
@@ -81,28 +85,42 @@ protected:
 
 };
 
-TEST_F(AMPSKerberosGSSAPIAuthenticatorTestSuite, TestObtainToken)
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestObtainToken)
 {
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(_spn);
+#else
   AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(_spn);
+#endif
   std::string token = authenticator.authenticate("", "");
   ASSERT_NE(token.length(), 0U);
   ASSERT_EQ(token.find("YII"), 0U);
 }
 
-TEST_F(AMPSKerberosGSSAPIAuthenticatorTestSuite, TestPublish)
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestPublish)
 {
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(_spn);
+#else
   AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(_spn);
+#endif
   AMPS::Client client("KerberosTestPublisher");
   client.connect(_uri);
   client.logon(10000, authenticator);
   client.publish("/topic", R"({"foo": "bar"})");
 }
 
-TEST_F(AMPSKerberosGSSAPIAuthenticatorTestSuite, TestUndefinedSPN)
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestUndefinedSPN)
 {
   bool errorThrown = false;
 
-  AMPS::AMPSKerberosGSSAPIAuthenticator authenticator("AMPS/foo.com");
+  std::string spn("AMPS/foo.com");
+
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(spn);
+#else
+  AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(spn);
+#endif
   try
   {
     authenticator.authenticate("", "");
@@ -118,6 +136,6 @@ TEST_F(AMPSKerberosGSSAPIAuthenticatorTestSuite, TestUndefinedSPN)
 int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
-  AMPSKerberosGSSAPIAuthenticatorTestSuite::done();
+  AMPSKerberosAuthenticatorTestSuite::done();
   return RUN_ALL_TESTS();
 }

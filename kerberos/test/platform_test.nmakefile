@@ -1,0 +1,30 @@
+#
+# This is a supplementary file for use with the Microsoft NMAKE
+# makefile provided in this directory. This file is included into
+# other makefiles to determine which toolset is configured,
+# the x86 toolset or x64 toolset. The output of this script is
+# set in the "TARGET_PLATFORM" variable.
+#
+# look at the banner message from cl to evaluate which
+# compiler is in our PATH first (x86 or x64)
+#
+!if [echo "y" | $(CC) /? 2>_test_ 1>nul]
+!endif
+# start writing a single-line file to include into self that sets X86_DETECTED
+!if [echo | set /p=X86_DETECTED=>_test_.inc]
+!endif
+# write the line from the banner with "x86" in it, if it is there
+!if [findstr "x86" _test_>>_test_.inc]
+!endif
+# now include the file we generated; X86_DETECTED is set if x86.
+!include _test_.inc
+!if "$(X86_DETECTED)"==""
+TARGET_PLATFORM=x64
+!else
+TARGET_PLATFORM=x86
+!endif
+!if [del _test_.inc _test_]
+!endif
+
+
+
