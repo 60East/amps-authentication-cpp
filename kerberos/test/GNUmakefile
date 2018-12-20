@@ -22,7 +22,7 @@ KRB5_DIR?=$(GFS_DIR)/oss/krb5/1.16.1
 
 GTEST_LIB=./lib/$(PROCESSOR)/gtest-all.o
 
-LDLIBS=-lamps -lpthread -lrt -ldl -lgssapi_krb5
+LDLIBS=-lamps -lpthread -lrt -ldl -lgssapi_krb5 -lkrb5 -lkrb5support -lk5crypto -lcom_err
 CXXFLAGS=$(OPTIMIZER) $(DEBUGOPTS) $(ARCH) -I$(GTEST_DIR)/include -I$(CLIENT_DIR)/include -I$(KRB5_DIR)/include -Wall -std=c++11
 LDFLAGS=-L$(CLIENT_LIB_DIR) -L$(KRB5_DIR)/lib
 TESTS = AMPSKerberosAuthenticatorTest AMPSKerberosUtilsTest
