@@ -19,7 +19,7 @@ def main():
 
     test_suffix = 'Test'
     if OS == 'linux':
-        check_call('make clean')
+        check_call(['make', 'clean'])
         check_call('make')
     else:
         check_call('.\win_build.bat')
