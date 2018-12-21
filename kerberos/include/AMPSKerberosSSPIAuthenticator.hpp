@@ -51,7 +51,7 @@ namespace AMPS
     CredHandle      _credentialsHandle;
     CtxtHandle      _contextHandle;
     TimeStamp       _contextLifetime;
-    bool            _contextHandleInitialized;
+    bool            _contextInitialized;
     unsigned long   _maxTokenSize;
 
     void sspiCallFailure(const std::string& sspiFuncName_, SECURITY_STATUS ss_) const;
@@ -61,7 +61,7 @@ namespace AMPS
 
   inline AMPSKerberosSSPIAuthenticator::AMPSKerberosSSPIAuthenticator(const std::string& spn_)
     : AMPS::AMPSKerberosAuthenticatorBase(spn_),
-      _contextHandleInitialized(FALSE)
+      _contextInitialized(FALSE)
   {
     AMPS::AMPSKerberosUtils::validateSPNWithRealm(spn_);
 
@@ -137,7 +137,7 @@ namespace AMPS
 
     unsigned long contextAttrs = 0;
 
-    if (_contextHandleInitialized)
+    if (_contextInitialized)
     {
       SecBufferDesc inSecBufDesc;
       SecBuffer     inSecBuf;
@@ -183,7 +183,7 @@ namespace AMPS
                                      &contextAttrs,
                                      &_contextLifetime);
 
-      _contextHandleInitialized = true;
+      _contextInitialized = true;
     }
 
     if ((ss != SEC_E_OK) && (ss != SEC_I_CONTINUE_NEEDED))
