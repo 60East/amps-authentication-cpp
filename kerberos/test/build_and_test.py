@@ -17,13 +17,14 @@ else:
 def main():
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-    make = 'make' if OS == 'linux' else 'nmake'
-    check_call([make, 'clean'])
-    check_call(make)
-
     test_suffix = 'Test'
-    if OS == 'windows':
+    if OS == 'linux':
+        check_call('make clean')
+        check_call('make')
+    else:
+        check_call('.\win_build.bat')
         test_suffix += '.exe'
+
     tests = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('AMPS') and f.endswith(test_suffix)]
     for test in tests:
         check_call(os.path.join('.', test))
