@@ -42,14 +42,18 @@ public:
     char const* host = getenv("AMPS_HOST");
     if (host == NULL)
     {
-      //TODO: It is probably better to use setUp and then FAIL()
       fprintf(stderr, "The AMPS_HOST environment variable must be set to run the tests\n");
       std::exit(1);
     }
 
-    int port;
     char const* portStr = getenv("AMPS_PORT");
-    port = (portStr == NULL) ? 6666 : std::stoi(portStr);
+    if (portStr == NULL)
+    {
+      fprintf(stderr, "The AMPS_PORT environment variable must be set to run the tests\n");
+      std::exit(1);
+    }
+
+    int port = std::stoi(portStr);
 
     char const* user = getenv("AMPS_USER");
     if (user == NULL)
