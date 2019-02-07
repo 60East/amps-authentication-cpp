@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2012-2018 60East Technologies Inc., All Rights Reserved.
+// Copyright (c) 2012-2019 60East Technologies Inc., All Rights Reserved.
 //
 // This computer software is owned by 60East Technologies Inc. and is
 // protected by U.S. copyright laws and other laws and by international
@@ -31,8 +31,6 @@
 #include <gssapi/gssapi_generic.h>
 #include <gssapi/gssapi_krb5.h>
 #include "AMPSKerberosAuthenticatorBase.hpp"
-
-#define MAX_TOKEN_SIZE 65535
 
 namespace AMPS
 {
