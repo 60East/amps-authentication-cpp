@@ -55,6 +55,7 @@ namespace AMPS
     void        releaseContextHandle();
     void        releaseCredentialsHandle();
     void        gssCallFailure(const std::string& gssFuncName_, OM_uint32 majorStatus_, OM_uint32 minorStatus_) const;
+    void        dispose();
     std::string getStatusString(OM_uint32 majorStatus_, OM_uint32 minorStatus_) const;
     std::string convertStatusToString(OM_uint32 status_, int statusCodeType_) const;
     std::string convertNameToString(const gss_name_t& name_) const;
@@ -73,8 +74,7 @@ namespace AMPS
   inline AMPSKerberosGSSAPIAuthenticator::~AMPSKerberosGSSAPIAuthenticator()
   {
     releaseName(_targetName);
-    releaseContextHandle();
-    releaseCredentialsHandle();
+    dispose();
   }
 
   inline void AMPSKerberosGSSAPIAuthenticator::initializeSecurityContext(const ByteBuffer& inToken_,
@@ -115,6 +115,7 @@ namespace AMPS
       {
         gss_delete_sec_context(&minorStatus, &_contextHandle, GSS_C_NO_BUFFER);
       }
+      dispose();
       gssCallFailure("gss_init_sec_context", majorStatus, minorStatus);
     }
   }
@@ -225,6 +226,12 @@ namespace AMPS
     gss_release_buffer(&minorStatus, &nameBuffer);
 
     return nameStr;
+  }
+
+  inline void AMPSKerberosGSSAPIAuthenticator::dispose()
+  {
+    releaseContextHandle();
+    releaseCredentialsHandle();
   }
 
 } // end namespace AMPS

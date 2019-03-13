@@ -51,6 +51,7 @@ namespace AMPS
     std::string  _spn;
 
     virtual void initializeSecurityContext(const ByteBuffer& inToken_, ByteBuffer& outToken_) = 0;
+    virtual void dispose() = 0;
 
   };
 
@@ -92,9 +93,11 @@ namespace AMPS
   {
     if (reason_ == AMPS::Reason::authDisabled())
     {
+      dispose();
       return;
     }
     authenticate(username_, token_);
+    dispose();
   }
 
 } // end namespace AMPS

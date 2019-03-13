@@ -114,6 +114,22 @@ TEST_F(AMPSKerberosAuthenticatorTestSuite, TestPublish)
   client.publish("/topic", R"({"foo": "bar"})");
 }
 
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestAuthTwice)
+{
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(_spn);
+#else
+  AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(_spn);
+#endif
+  AMPS::Client client("KerberosTestPublisher");
+  client.connect(_uri);
+  client.logon(10000, authenticator);
+  client.disconnect();
+  client.connect(_uri);
+  client.logon(10000, authenticator);
+  client.publish("/topic", R"({"foo": "bar"})");
+}
+
 TEST_F(AMPSKerberosAuthenticatorTestSuite, TestUndefinedSPN)
 {
   bool errorThrown = false;

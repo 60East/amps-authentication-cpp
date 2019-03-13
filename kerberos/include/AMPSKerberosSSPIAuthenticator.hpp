@@ -54,9 +54,11 @@ namespace AMPS
     bool            _contextInitialized;
     unsigned long   _maxTokenSize;
 
+    void init();
     void sspiCallFailure(const std::string& sspiFuncName_, SECURITY_STATUS ss_) const;
     void acquireCredentials();
     void initializeSecurityContext(const ByteBuffer& inToken_, ByteBuffer& outToken_);
+    void dispose();
   };
 
   inline AMPSKerberosSSPIAuthenticator::AMPSKerberosSSPIAuthenticator(const std::string& spn_)
@@ -74,19 +76,17 @@ namespace AMPS
     }
     _maxTokenSize = pkgInfo->cbMaxToken;
     FreeContextBuffer(pkgInfo);
-
-    SecInvalidateHandle(&_credentialsHandle);
-    SecInvalidateHandle(&_contextHandle);
-
-    acquireCredentials();
   }
 
   inline AMPSKerberosSSPIAuthenticator::~AMPSKerberosSSPIAuthenticator()
   {
-    DeleteSecurityContext(&_contextHandle);
-    SecInvalidateHandle(&_contextHandle);
-    FreeCredentialHandle(&_credentialsHandle);
-    SecInvalidateHandle(&_credentialsHandle);
+    dispose();
+  }
+
+  inline void AMPSKerberosSSPIAuthenticator::init()
+  {
+    dispose();
+    acquireCredentials();
   }
 
   inline void AMPSKerberosSSPIAuthenticator::sspiCallFailure(const std::string& sspiFuncName_, SECURITY_STATUS ss_) const
@@ -137,7 +137,25 @@ namespace AMPS
 
     unsigned long contextAttrs = 0;
 
-    if (_contextInitialized)
+    if (!_contextInitialized)
+    {
+      init();
+      ss = InitializeSecurityContext(&_credentialsHandle,
+                                     NULL,
+                                     const_cast<SEC_CHAR*>(_spn.c_str()),
+                                     ISC_REQ_MUTUAL_AUTH | ISC_REQ_REPLAY_DETECT | ISC_REQ_SEQUENCE_DETECT | ISC_REQ_CONNECTION,
+                                     0,
+                                     SECURITY_NATIVE_DREP,
+                                     NULL,
+                                     0,
+                                     &_contextHandle,
+                                     &outSecBufDesc,
+                                     &contextAttrs,
+                                     &_contextLifetime);
+
+      _contextInitialized = TRUE;
+    }
+    else
     {
       SecBufferDesc inSecBufDesc;
       SecBuffer     inSecBuf;
@@ -158,7 +176,8 @@ namespace AMPS
       ss = InitializeSecurityContext(&_credentialsHandle,
                                      &_contextHandle,
                                      const_cast<SEC_CHAR*>(_spn.c_str()),
-                                     ISC_REQ_MUTUAL_AUTH | ISC_REQ_REPLAY_DETECT | ISC_REQ_SEQUENCE_DETECT | ISC_REQ_CONNECTION,
+                                     ISC_REQ_MUTUAL_AUTH | ISC_REQ_REPLAY_DETECT
+                                     | ISC_REQ_SEQUENCE_DETECT | ISC_REQ_CONNECTION,
                                      0,
                                      SECURITY_NATIVE_DREP,
                                      &inSecBufDesc,
@@ -168,26 +187,10 @@ namespace AMPS
                                      &contextAttrs,
                                      &_contextLifetime);
     }
-    else
-    {
-      ss = InitializeSecurityContext(&_credentialsHandle,
-                                     NULL,
-                                     const_cast<SEC_CHAR*>(_spn.c_str()),
-                                     ISC_REQ_MUTUAL_AUTH | ISC_REQ_REPLAY_DETECT | ISC_REQ_SEQUENCE_DETECT | ISC_REQ_CONNECTION,
-                                     0,
-                                     SECURITY_NATIVE_DREP,
-                                     NULL,
-                                     0,
-                                     &_contextHandle,
-                                     &outSecBufDesc,
-                                     &contextAttrs,
-                                     &_contextLifetime);
-
-      _contextInitialized = true;
-    }
 
     if ((ss != SEC_E_OK) && (ss != SEC_I_CONTINUE_NEEDED))
     {
+      dispose();
       sspiCallFailure("InitializeSecurityContext", ss);
     }
 
@@ -196,6 +199,7 @@ namespace AMPS
       ss = CompleteAuthToken(&_contextHandle, &outSecBufDesc);
       if (ss != SEC_E_OK)
       {
+        dispose();
         sspiCallFailure("CompleteAuthToken", ss);
       }
     }
@@ -205,6 +209,15 @@ namespace AMPS
       outToken_.resize(outSecBuf.cbBuffer);
       std::memcpy(&outToken_[0], outSecBuf.pvBuffer, outSecBuf.cbBuffer);
     }
+  }
+
+  inline void AMPSKerberosSSPIAuthenticator::dispose()
+  {
+    DeleteSecurityContext(&_contextHandle);
+    SecInvalidateHandle(&_credentialsHandle);
+    FreeCredentialHandle(&_credentialsHandle);
+    SecInvalidateHandle(&_contextHandle);
+    _contextInitialized = FALSE;
   }
 
 } // end namespace AMPS
