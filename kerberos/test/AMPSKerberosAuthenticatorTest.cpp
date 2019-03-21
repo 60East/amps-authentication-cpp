@@ -114,7 +114,7 @@ TEST_F(AMPSKerberosAuthenticatorTestSuite, TestPublish)
   client.publish("/topic", R"({"foo": "bar"})");
 }
 
-TEST_F(AMPSKerberosAuthenticatorTestSuite, TestAuthTwice)
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestMultipleAuth)
 {
 #ifdef _WIN32
   AMPS::AMPSKerberosSSPIAuthenticator authenticator(_spn);
@@ -122,12 +122,50 @@ TEST_F(AMPSKerberosAuthenticatorTestSuite, TestAuthTwice)
   AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(_spn);
 #endif
   AMPS::Client client("KerberosTestPublisher");
-  client.connect(_uri);
-  client.logon(10000, authenticator);
-  client.disconnect();
-  client.connect(_uri);
-  client.logon(10000, authenticator);
-  client.publish("/topic", R"({"foo": "bar"})");
+
+  for (int i = 0; i < 10; ++i)
+  {
+    client.connect(_uri);
+    client.logon(10000, authenticator);
+    client.disconnect();
+  }
+}
+
+
+TEST_F(AMPSKerberosAuthenticatorTestSuite, TestMultipleAuthWithFailure)
+{
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(_spn);
+#else
+  AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(_spn);
+#endif
+  AMPS::Client client("KerberosTestPublisher");
+
+  bool errorThrown = false;
+  for (int i = 0; i < 10; ++i)
+  {
+    if (i % 2 == 0)
+    {
+      client.connect(_uri);
+      client.logon(10000, authenticator);
+      client.disconnect();
+    }
+    else
+    {
+      try
+      {
+        client.connect(_uri);
+        client.logon();
+      }
+      catch (const AMPS::AMPSException& e)
+      {
+        client.disconnect();
+        errorThrown = true;
+      }
+    }
+  }
+
+  ASSERT_TRUE(errorThrown);
 }
 
 TEST_F(AMPSKerberosAuthenticatorTestSuite, TestUndefinedSPN)

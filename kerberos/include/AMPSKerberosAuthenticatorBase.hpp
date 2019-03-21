@@ -49,9 +49,17 @@ namespace AMPS
   protected:
 
     std::string  _spn;
+    ByteBuffer   _inTokenBuf;
+    ByteBuffer   _outTokenBuf;
+    bool         _completing;
 
     virtual void initializeSecurityContext(const ByteBuffer& inToken_, ByteBuffer& outToken_) = 0;
+    virtual void init() = 0;
     virtual void dispose() = 0;
+
+  private:
+
+    std::string _authenticate(const std::string& username_, const std::string& token_, bool completing_);
 
   };
 
@@ -60,27 +68,37 @@ namespace AMPS
   {
   }
 
-  inline std::string AMPSKerberosAuthenticatorBase::authenticate(const std::string& username_, const std::string& token_)
+  inline std::string AMPSKerberosAuthenticatorBase::_authenticate(const std::string& username_, const std::string& token_, bool completing_)
   {
-    ByteBuffer inTokenBuf;
-    ByteBuffer outTokenBuf;
+    if (!completing_)
+    {
+      dispose();
+      init();
+    }
+    _inTokenBuf.clear();
+    _outTokenBuf.clear();
 
     if (!token_.empty())
     {
       std::string decodedToken = AMPS::Base64::decode(token_);
-      inTokenBuf.assign(decodedToken.begin(), decodedToken.end());
+      _inTokenBuf.assign(decodedToken.begin(), decodedToken.end());
     }
 
-    initializeSecurityContext(inTokenBuf, outTokenBuf);
+    initializeSecurityContext(_inTokenBuf, _outTokenBuf);
 
-    if (!outTokenBuf.empty())
+    if (!_outTokenBuf.empty())
     {
-      std::string outToken(outTokenBuf.begin(), outTokenBuf.end());
+      std::string outToken(_outTokenBuf.begin(), _outTokenBuf.end());
       std::string encodedToken = AMPS::Base64::encode(outToken);
       return encodedToken;
     }
 
     return "";
+  }
+
+  inline std::string AMPSKerberosAuthenticatorBase::authenticate(const std::string& username_, const std::string& token_)
+  {
+    return _authenticate(username_, token_, false);
   }
 
   inline std::string AMPSKerberosAuthenticatorBase::retry(const std::string& username_, const std::string& token_)
@@ -96,7 +114,7 @@ namespace AMPS
       dispose();
       return;
     }
-    authenticate(username_, token_);
+    _authenticate(username_, token_, true);
     dispose();
   }
 

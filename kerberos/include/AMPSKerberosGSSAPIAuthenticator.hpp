@@ -49,6 +49,7 @@ namespace AMPS
     gss_cred_id_t _credentialsHandle;
     gss_name_t    _targetName;
 
+    void        init();
     void        importServiceName();
     void        initializeSecurityContext(const ByteBuffer& inToken_, ByteBuffer& outToken_);
     void        releaseName(gss_name_t& name_) const;
@@ -64,7 +65,8 @@ namespace AMPS
   inline AMPSKerberosGSSAPIAuthenticator::AMPSKerberosGSSAPIAuthenticator(const std::string& spn_)
     : AMPS::AMPSKerberosAuthenticatorBase(spn_),
       _contextHandle(GSS_C_NO_CONTEXT),
-      _credentialsHandle(GSS_C_NO_CREDENTIAL)
+      _credentialsHandle(GSS_C_NO_CREDENTIAL),
+      _targetName(GSS_C_NO_NAME)
   {
     AMPS::AMPSKerberosUtils::validateSPN(spn_);
     std::replace(_spn.begin(), _spn.end(), '/', '@');
@@ -74,6 +76,11 @@ namespace AMPS
   inline AMPSKerberosGSSAPIAuthenticator::~AMPSKerberosGSSAPIAuthenticator()
   {
     releaseName(_targetName);
+    dispose();
+  }
+
+  inline void AMPSKerberosGSSAPIAuthenticator::init()
+  {
     dispose();
   }
 
@@ -111,10 +118,8 @@ namespace AMPS
     }
     else
     {
-      if (_contextHandle != GSS_C_NO_CONTEXT)
-      {
-        gss_delete_sec_context(&minorStatus, &_contextHandle, GSS_C_NO_BUFFER);
-      }
+      OM_uint32 minorStatusForCleanup = 0U;
+      gss_release_buffer(&minorStatusForCleanup, &outTokenBuf);
       dispose();
       gssCallFailure("gss_init_sec_context", majorStatus, minorStatus);
     }
@@ -127,7 +132,7 @@ namespace AMPS
 
     gss_buffer_desc nameBuf;
     nameBuf.value = (void*)_spn.c_str();
-    nameBuf.length = _spn.length() + 1;
+    nameBuf.length = _spn.length() + 1;  //null terminator should be included
 
     majorStatus = gss_import_name(&minorStatus, &nameBuf, GSS_C_NT_HOSTBASED_SERVICE, &_targetName);
     if (majorStatus != GSS_S_COMPLETE)
