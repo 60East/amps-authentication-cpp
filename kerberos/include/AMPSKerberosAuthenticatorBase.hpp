@@ -27,7 +27,7 @@
 #define _AMPS_KERBEROS_AUTHENTICATOR_BASE_HPP_
 
 #include <ampsplusplus.hpp>
-#include "AMPSBase64.hpp"
+#include "amps_base64.hpp"
 #include "AMPSKerberosUtils.hpp"
 
 namespace AMPS
@@ -49,15 +49,17 @@ namespace AMPS
   protected:
 
     std::string  _spn;
-    ByteBuffer   _inTokenBuf;
-    ByteBuffer   _outTokenBuf;
-    bool         _completing;
 
     virtual void initializeSecurityContext(const ByteBuffer& inToken_, ByteBuffer& outToken_) = 0;
     virtual void init() = 0;
     virtual void dispose() = 0;
 
   private:
+
+    ByteBuffer   _inTokenBuf;
+    ByteBuffer   _outTokenBuf;
+    bool         _completing;
+    std::string  _encodedToken;
 
     std::string _authenticate(const std::string& username_, const std::string& token_, bool completing_);
 
@@ -77,20 +79,30 @@ namespace AMPS
     }
     _inTokenBuf.clear();
     _outTokenBuf.clear();
+    _encodedToken.clear();
 
     if (!token_.empty())
     {
-      std::string decodedToken = AMPS::Base64::decode(token_);
-      _inTokenBuf.assign(decodedToken.begin(), decodedToken.end());
+      size_t inputLength = token_.size();
+      const unsigned char* pInput = reinterpret_cast<const unsigned char*>(token_.data());
+      _inTokenBuf.resize(inputLength);
+      char* pOutput = reinterpret_cast<char*>(const_cast<unsigned char*>(_inTokenBuf.data()));
+      size_t outputLength = 0;
+
+      amps::base64::decode(pInput, inputLength, pOutput, &outputLength);
+      _inTokenBuf.resize(outputLength);
     }
 
     initializeSecurityContext(_inTokenBuf, _outTokenBuf);
 
     if (!_outTokenBuf.empty())
     {
-      std::string outToken(_outTokenBuf.begin(), _outTokenBuf.end());
-      std::string encodedToken = AMPS::Base64::encode(outToken);
-      return encodedToken;
+      // C++11 guarantees contiguous storage of strings
+      size_t max_encoded_size = 5 + ( (4 * (_outTokenBuf.size() + 2)) / 3 );
+      _encodedToken.resize(max_encoded_size);
+      char* pPassword = const_cast<char*>(&_encodedToken.front());
+      _encodedToken.resize(amps::base64::encode(_outTokenBuf.data(), _outTokenBuf.size(), pPassword) - 1);
+      return _encodedToken;
     }
 
     return "";
