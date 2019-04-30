@@ -1,38 +1,40 @@
-# AMPS C# Client Kerberos Authentication
+# AMPS C++ Client Kerberos Authentication
 
 ## Dependencies
 
-The C# Kerberos authenticator has a single dependency on the [NSspi NuGet package](https://www.nuget.org/packages/NSspi).
+The C++ Kerberos authenticator for Linux (GSSAPI) has a dependency on the GSSAPI libs that are part of the [krb5 distribution](http://web.mit.edu/Kerberos/dist).
 
 ## Example
 
-For Kerberos authentication using C# there is a single module, `AMPSKerberosAuthenticator`, for authentication on Windows.
+For Kerberos authentication using C++ there are two different `Authenticator` implmentations, one for GSSAPI based authentication and one for SSPI based authentication. GSSAPI is the only option for authentication when running on Linux, but, unlike Java, it is not supported on Windows. Specifically, `AMPSKerberosGSSAPIAuthenticator` is used when running on Linux and `AMPSKerberosSSPIAuthenticator` is used when running on Windows.
 
-```csharp
+```cpp
+#include <ampsplusplus.hpp>
+#include <string>
 
-using AMPS.Client;
-using AMPSKerberos;
+#ifdef _WIN32
+  #include "AMPSKerberosSSPIAuthenticator.hpp"
+#else
+  #include "AMPSKerberosGSSAPIAuthenticator.hpp"
+#endif
 
-class KerberosAuthExample
+int main ()
 {
-    static void Main(string[] args)
-    {
-        string username = "username";
-        string hostname = "hostname";
+  std::string username("username");
+  std::string hostname("hostname");
 
-        string amps_spn = string.Format("AMPS/{0}", hostname);
-        string amps_uri = string.Format("tcp://{0}@{1}:10304/amps/json", username, hostname);
+  std::string amps_spn = std::string("AMPS/") + hostname;
+  std::string amps_uri = std::string("tcp://") + username + "@" + hostname + ":10304/amps/json";
 
-        AMPSKerberosAuthenticator authenticator = new AMPSKerberosAuthenticator(amps_spn);
-  
-        using (Client client = new Client("KerberosExampleClient"))
-        {
-            client.connect(amps_uri);
-            client.logon(5000, authenticator);
-        }
-    }
+#ifdef _WIN32
+  AMPS::AMPSKerberosSSPIAuthenticator authenticator(amps_spn);
+#else
+  AMPS::AMPSKerberosGSSAPIAuthenticator authenticator(amps_spn);
+#endif
+  AMPS::Client client("KerberosExampleClient");
+  client.connect(amps_uri);
+  client.logon(5000, authenticator);
 }
-
 ```
 
 ## See Also
